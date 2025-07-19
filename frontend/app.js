@@ -14,7 +14,7 @@ const state = {
 
 const getApiUrl = () => {
     const hostname = window.location.hostname
-    if (hostname === 'https://triviaexplorer-frontend.onrender.com') { // TODO: replace with your production frontend url
+    if (hostname === 'triviaexplorer-frontend.onrender.com') {
         return 'https://triviaexplorer.onrender.com/api'
     }
     return 'http://localhost:3000/api'
