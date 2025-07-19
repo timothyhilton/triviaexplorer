@@ -9,7 +9,11 @@ const app = express();
 const port = process.env.PORT || 3000;
 const cache = new NodeCache({ stdTTL: 3600 });
 
-app.use(cors());
+const corsOptions = {
+    origin: '*'
+}
+
+app.use(cors(corsOptions));
 
 // state for proactive rate limiting
 let lastApiCallTimestamp = 0;
@@ -74,7 +78,6 @@ app.get('/api/questions', async (req, res) => {
             // fetch a larger batch to simulate pagination as opentdb doesn't support it
             let url = `https://opentdb.com/api.php?amount=50`; 
             if (queryParams.category) url += `&category=${queryParams.category}`;
-            if (queryParams.difficulty) url += `&difficulty=${queryParams.difficulty}`;
             if (queryParams.type) url += `&type=${queryParams.type}`;
 
             lastApiCallTimestamp = Date.now();
@@ -82,6 +85,10 @@ app.get('/api/questions', async (req, res) => {
             
             if (response.data.response_code === 0 && response.data.results) {
                 let questions = response.data.results;
+
+                if (queryParams.difficulty) {
+                    questions = questions.filter(q => q.difficulty.toLowerCase() === queryParams.difficulty.toLowerCase());
+                }
 
                 if (queryParams.search) {
                     questions = questions.filter(q => q.question.toLowerCase().includes(queryParams.search.toLowerCase()));

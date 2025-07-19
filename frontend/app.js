@@ -12,7 +12,15 @@ const state = {
     isLoading: false,
 };
 
-const API_URL = window.__CONFIG__.API_URL;
+const getApiUrl = () => {
+    const hostname = window.location.hostname
+    if (hostname === 'https://triviaexplorer-frontend.onrender.com') { // TODO: replace with your production frontend url
+        return 'https://triviaexplorer.onrender.com/api'
+    }
+    return 'http://localhost:3000/api'
+}
+
+const API_URL = getApiUrl()
 
 let controller = new AbortController();
 
@@ -66,7 +74,9 @@ async function fetchQuestions(loadMore = false) {
             }
 
             state.hasMore = data.length === 10;
-            state.page += 1;
+            if (data.length > 0) {
+                state.page += 1;
+            }
         }
         renderCards();
     } catch (error) {
@@ -112,7 +122,7 @@ function renderCards() {
     newQuestions.forEach(question => {
         const card = document.createElement('div');
         card.className = 'card';
-        const questionId = btoa(question.question);
+        const questionId = btoa(unescape(encodeURIComponent(question.question)));
         const isSaved = !!state.savedQuestions[questionId];
 
         card.innerHTML = `
@@ -213,7 +223,7 @@ function handleSaveClick(e) {
     const button = e.target;
     const questionId = button.dataset.questionId;
     
-    const question = state.questions.find(q => btoa(q.question) === questionId);
+    const question = state.questions.find(q => btoa(unescape(encodeURIComponent(q.question))) === questionId);
     if (!question) return;
 
     const isSaved = !!state.savedQuestions[questionId];
@@ -283,6 +293,7 @@ function init() {
     elements.difficultyButtons.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') {
             const difficulty = e.target.dataset.difficulty;
+            state.currentFilters.difficulty = difficulty;
             document.querySelectorAll('.difficulty-buttons button').forEach(btn => btn.classList.remove('active'));
             e.target.classList.add('active');
             handleFilterChange();
