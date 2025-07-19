@@ -129,8 +129,8 @@ function renderCards() {
             <div class="card-header">
                 <span class="card-category">${question.category}</span>
                 <div>
-                    <button class="save-btn ${isSaved ? 'saved' : ''}" data-question-id="${questionId}">★</button>
                     <span class="card-difficulty difficulty-${question.difficulty}">${question.difficulty}</span>
+                    <button class="save-btn ${isSaved ? 'saved' : ''}" data-question-id="${questionId}">★</button>
                     <button class="dropdown-btn">▾</button>
                 </div>
             </div>
