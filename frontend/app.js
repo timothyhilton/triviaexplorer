@@ -3,6 +3,7 @@ const state = {
     currentFilters: {
         category: '',
         difficulty: '',
+        type: '',
         search: '',
     },
     page: 1,
@@ -11,7 +12,7 @@ const state = {
     isLoading: false,
 };
 
-const API_URL = 'http://localhost:3000/api/questions';
+const API_URL = window.__CONFIG__.API_URL;
 
 let controller = new AbortController();
 
@@ -20,6 +21,7 @@ const elements = {
     categorySelect: document.getElementById('category'),
     difficultyButtons: document.querySelector('.difficulty-buttons'),
     searchInput: document.getElementById('search'),
+    typeSelect: document.getElementById('type'),
     questionFeed: document.getElementById('question-feed'),
     loader: document.querySelector('.loader'),
     favoritesBtn: null,
@@ -42,15 +44,16 @@ async function fetchQuestions(loadMore = false) {
         if (state.currentFilters.favoritesOnly) {
             state.questions = Object.values(state.savedQuestions);
         } else {
-            const { category, difficulty, search } = state.currentFilters;
+            const { category, difficulty, search, type } = state.currentFilters;
             const params = new URLSearchParams({
                 amount: 10,
                 page: state.page,
                 ...(category && { category }),
                 ...(difficulty && { difficulty }),
+                ...(type && { type }),
                 ...(search && { search }),
             });
-            const response = await fetch(`${API_URL}?${params}`, { signal });
+            const response = await fetch(`${API_URL}/questions?${params}`, { signal });
             if (!response.ok) {
                 throw new Error('Network response was not ok');
             }
@@ -115,41 +118,34 @@ function renderCards() {
         card.innerHTML = `
             <div class="card-header">
                 <span class="card-category">${question.category}</span>
-                <span class="card-difficulty difficulty-${question.difficulty}">${question.difficulty}</span>
+                <div>
+                    <button class="save-btn ${isSaved ? 'saved' : ''}" data-question-id="${questionId}">★</button>
+                    <span class="card-difficulty difficulty-${question.difficulty}">${question.difficulty}</span>
+                    <button class="dropdown-btn">▾</button>
+                </div>
             </div>
             <p class="card-question">${question.question}</p>
-            <ul class="card-answers" style="display: none;">
-                ${question.answers.map(answer => `
-                    <li>${answer}</li>
-                `).join('')}
-            </ul>
-            <div class="card-footer">
-                <button class="reveal-btn" style="display: none;">Reveal Answer</button>
-                <button class="save-btn ${isSaved ? 'saved' : ''}" data-question-id="${questionId}">
-                    ★
-                </button>
+            <div class="card-body" style="display: none;">
+                <ul class="card-answers">
+                    ${question.answers.map(answer => `<li>${answer}</li>`).join('')}
+                </ul>
+                <button class="reveal-btn">Reveal Answer</button>
             </div>
         `;
 
-        card.addEventListener('click', (e) => {
-            if (e.target.classList.contains('save-btn') || e.target.classList.contains('reveal-btn')) return;
-            const answers = card.querySelector('.card-answers');
-            const revealBtn = card.querySelector('.reveal-btn');
-            const areAnswersVisible = answers.style.display === 'block';
+        const dropdownBtn = card.querySelector('.dropdown-btn');
+        const cardBody = card.querySelector('.card-body');
 
-            answers.style.display = areAnswersVisible ? 'none' : 'block';
-            revealBtn.style.display = areAnswersVisible ? 'none' : 'inline-block';
-
-            if (areAnswersVisible) { // When hiding
-                const correctAnswerEl = card.querySelector('.card-answers li.correct');
-                if (correctAnswerEl) {
-                    correctAnswerEl.classList.remove('correct');
-                }
-            }
+        dropdownBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isVisible = cardBody.style.display === 'block';
+            cardBody.style.display = isVisible ? 'none' : 'block';
+            dropdownBtn.textContent = isVisible ? '▾' : '▴';
         });
 
         const revealBtn = card.querySelector('.reveal-btn');
-        revealBtn.addEventListener('click', () => {
+        revealBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
             const correctAnswer = question.correct_answer;
             const answerElements = card.querySelectorAll('.card-answers li');
             answerElements.forEach(li => {
@@ -160,6 +156,27 @@ function renderCards() {
             revealBtn.style.display = 'none';
         });
         
+        const answersList = card.querySelector('.card-answers');
+        answersList.addEventListener('click', (e) => {
+            if (e.target.tagName !== 'LI') return;
+            
+            const correctAnswer = question.correct_answer;
+            const isCorrect = e.target.textContent === correctAnswer;
+            
+            e.target.classList.add(isCorrect ? 'correct' : 'incorrect');
+
+            // also show correct answer
+            if (!isCorrect) {
+                const correctAnswerEl = Array.from(answersList.children).find(li => li.textContent === correctAnswer);
+                if (correctAnswerEl) {
+                    correctAnswerEl.classList.add('correct');
+                }
+            }
+
+            // disable further clicks
+            answersList.style.pointerEvents = 'none';
+        });
+
         cardsFragment.appendChild(card);
     });
 
@@ -231,6 +248,7 @@ function init() {
         const filtersDisabled = state.currentFilters.favoritesOnly;
         elements.categorySelect.disabled = filtersDisabled;
         elements.searchInput.disabled = filtersDisabled;
+        elements.typeSelect.disabled = filtersDisabled;
         elements.difficultyButtons.querySelectorAll('button').forEach(b => {
             b.disabled = filtersDisabled
         });
@@ -257,9 +275,14 @@ function init() {
         handleFilterChange();
     });
 
+    elements.typeSelect.addEventListener('change', (e) => {
+        state.currentFilters.type = e.target.value;
+        handleFilterChange();
+    });
+
     elements.difficultyButtons.addEventListener('click', (e) => {
         if (e.target.tagName === 'BUTTON') {
-            state.currentFilters.difficulty = e.target.dataset.difficulty;
+            const difficulty = e.target.dataset.difficulty;
             document.querySelectorAll('.difficulty-buttons button').forEach(btn => btn.classList.remove('active'));
             e.target.classList.add('active');
             handleFilterChange();

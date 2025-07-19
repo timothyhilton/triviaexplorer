@@ -56,6 +56,14 @@
                     <label for="search">Search:</label>
                     <input type="search" id="search" name="search" placeholder="Search questions...">
                 </div>
+                <div class="form-group">
+                    <label for="type">Type:</label>
+                    <select id="type" name="type">
+                        <option value="">Any</option>
+                        <option value="multiple">Multiple Choice</option>
+                        <option value="boolean">True/False</option>
+                    </select>
+                </div>
             </form>
         </aside>
         <div id="question-feed">
@@ -68,6 +76,7 @@
     <footer>
         <p>Powered by <a href="https://opentdb.com/">Open Trivia Database</a></p>
     </footer>
+    <script src="env.js"></script>
     <script src="app.js"></script>
 </body>
 </html> 

@@ -1,3 +1,4 @@
+require('dotenv').config({ path: '../.env' });
 const express = require('express');
 const axios = require('axios');
 const NodeCache = require('node-cache');
@@ -5,7 +6,7 @@ const cors = require('cors');
 const he = require('he');
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const cache = new NodeCache({ stdTTL: 3600 });
 
 app.use(cors());
@@ -106,8 +107,10 @@ app.get('/api/questions', async (req, res) => {
                     console.log(`Query resulted in no questions after filtering. Not caching.`);
                 }
             } else {
-                console.log(`OpenTDB API returned no results or an error code: ${response.data.response_code}. Not caching.`);
-                allQuestions = [];
+                console.log(`OpenTDB API returned no results or an error code: ${response.data.response_code}. Caching empty result to avoid repeated failed requests.`)
+                allQuestions = []
+                // negative-cache the empty array so subsequent identical requests don’t keep hitting the API
+                cache.set(cacheKey, allQuestions, 3600)
             }
         } else {
             console.log(`Cache hit for ${cacheKey}.`);
