@@ -25,4 +25,4 @@ lerna-debug.log*
 .env.test.local
 .env.production.local
 
-frontend/env.js
+env.js
