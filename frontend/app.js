@@ -267,8 +267,29 @@ function createFavoritesButton() {
   elements.favoritesBtn = btn;
 }
 
+async function fetchAndPopulateCategories() {
+  try {
+    const response = await fetch(`${API_URL}/categories`);
+    if (!response.ok) {
+      throw new Error("Failed to fetch categories");
+    }
+    const categories = await response.json();
+    elements.categorySelect.innerHTML =
+      '<option value="">Any Category</option>';
+    categories.forEach((category) => {
+      const option = document.createElement("option");
+      option.value = category.id;
+      option.textContent = category.name;
+      elements.categorySelect.appendChild(option);
+    });
+  } catch (error) {
+    console.error("Could not populate categories:", error);
+  }
+}
+
 function init() {
   createFavoritesButton();
+  fetchAndPopulateCategories();
 
   elements.favoritesBtn.addEventListener("click", (e) => {
     e.preventDefault();
